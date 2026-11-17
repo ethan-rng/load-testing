@@ -1,60 +1,38 @@
 # load-testing
 
-Load tests one tRPC route of the Hack Western site with fake payloads. Each
-virtual user optionally logs in as a seeded test user, then sends requests
-back to back until the time is up and reports throughput, latency
-percentiles and status codes.
+k6 load tests (TypeScript) for the Hack Western site. Two modes:
 
-Rust port of the k6 setup Lucas (hackwestern/hackwestern#746) and Ethan
-(`load-testing` branch) built in
-[hackwestern/hackwestern](https://github.com/hackwestern/hackwestern).
+- `naive`: a fixed, read-only loop of routes. Works today.
+- `realistic`: user behavior shaped by D1 request data, per phase
+  (`before`, `during`, `after`). Not built yet.
 
 ## Run
 
 ```
-cargo run --release -- --route application.get --vus 10 --duration 30s
+npm install
+TARGET=http://localhost:3000 TEST_EMAIL=you@example.com TEST_PASSWORD='...' \
+  VUS=10 DURATION=60s ./run.sh
 ```
 
-| Flag | Default | |
-| --- | --- | --- |
-| `--route` | | tRPC route, e.g. `application.get` |
-| `--auth` | `none` | `none`, `hacker` or `organizer` (`n`/`y`/`o` also work) |
-| `--vus` | `10` | concurrent virtual users |
-| `--duration` | `30s` | e.g. `30s`, `2m` |
-| `--url` | `http://localhost:3000` | base URL of the deployment |
-| `--schema` | `api.json` | OpenAPI export of the tRPC router |
+Settings are env vars: `TARGET`, `MODE` (default `naive`), `PHASE` (default
+`during`), `VUS`, `DURATION`, `RAMP_UP`, `ALLOW_MUTATIONS`, `TEST_EMAIL`,
+`TEST_PASSWORD`, `ALLOWED_HOSTS`.
 
-With `--auth hacker` or `--auth organizer`, one test user per virtual user is
-inserted into `DATABASE_URL` before the run and deleted after it, including on
-Ctrl-C. `DATABASE_URL` has to be the database the target deployment uses.
+Each run writes `results/<testid>.json` (and an HTML report for longer runs).
 
-```
-DATABASE_URL=postgres://... cargo run --release -- --route application.get --auth hacker --url http://localhost:3000
-```
+## Safety
 
-## Targets
+- Refuses `hackwestern.com`, and any host not in `ALLOWED_HOSTS`
+  (default `dev.hackwestern.com`; localhost is always allowed).
+- Mutations are off unless `ALLOW_MUTATIONS=true`.
+- Routes that send email, call GitHub/Devpost, or delete data are on a
+  deny-list in `src/lib/config.ts`.
 
-- Local dev server: default.
-- The dev preview (`https://hackwestern-git-dev-hack-western-web.vercel.app`)
-  uses the dev database. Vercel's DDoS mitigation will block sustained load
-  from one IP unless that IP has a system bypass rule; ask the web lead.
-- Never production.
-
-## Schema
-
-`api.json` is the OpenAPI export from the main repo's `/api/openapi` route
-(`trpc-to-openapi`, only on the `load-testing` branch). The copy here is from
-September and is behind `dev`, so some payloads get 400s. Regenerate it when
-the routers change.
-
-Fields named `email` and `password` get hand-written values that pass the
-sign-up rules; everything else is generated from the schema.
-
-## Test
+## Check
 
 ```
-cargo test
+npm run typecheck
+npm run mock     # fake app on :3999 for trying the scripts without the real one
 ```
 
-Checks that fake payloads for every route in `api.json` validate against
-that route's input schema.
+The Rust version of this tool is in git history (commit `e651385`).

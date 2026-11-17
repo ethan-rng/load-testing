@@ -1,0 +1,14 @@
+{
+  "name": "hw-load-test",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "run:naive": "./run.sh",
+    "mock": "node test/mock-server.mjs"
+  },
+  "devDependencies": {
+    "@types/k6": "^1.0.0",
+    "typescript": "^5.6.0"
+  }
+}
