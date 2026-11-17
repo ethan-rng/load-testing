@@ -33,7 +33,15 @@ const server = http.createServer((req, res) => {
     return json(200, authed ? { user: { id: "u" } } : {});
   if (url.pathname === "/api/docs/app") {
     if (req.headers.authorization !== "Bearer secret") return json(401, { message: "Unauthorized" });
-    return json(200, { version: 1, pages: [], rest: [{}], trpc: [{}, {}] });
+    return json(200, {
+      version: 1, pages: [], rest: [],
+      trpc: [
+        { path: "scavengerHunt.getAllScavengerHuntItems", type: "query" },
+        { path: "application.get", type: "query" },
+        { path: "scavengerHunt.getPoints", type: "mutation" }, // wrong type on purpose
+        // the other naive routes are missing on purpose
+      ],
+    });
   }
   if (url.pathname === "/__counts") return json(200, counts);
 

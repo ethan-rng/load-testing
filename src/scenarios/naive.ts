@@ -17,7 +17,7 @@ const users = new SharedArray<TestUser>("users", () => {
   }
 });
 
-interface Step {
+export interface Step {
   path: string;
   type: ProcedureType;
   input?: unknown;
@@ -25,11 +25,11 @@ interface Step {
 }
 
 // Fixed, hand-picked journeys. Phase 1 only uses read-only calls.
-const anonymousSteps: Step[] = [
+export const anonymousSteps: Step[] = [
   { path: "scavengerHunt.getAllScavengerHuntItems", type: "query" },
 ];
 
-const hackerSteps: Step[] = [
+export const hackerSteps: Step[] = [
   { path: "application.get", type: "query" },
   { path: "scavengerHunt.getPoints", type: "query" },
   { path: "scavengerHunt.getScans", type: "query" },

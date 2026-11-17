@@ -22,17 +22,22 @@ Each run writes `results/<testid>.json` (and an HTML report for longer runs).
 
 ## App map
 
-The scripts read the app's route and schema map from `data/app.json` (gitignored).
-Download it from the app's `/api/docs/app` route:
+At the start of each run, `setup()` fetches the app map from
+`DOCS_ROOT/api/docs/app` using the bearer token in `DOCS_TOKEN`. `DOCS_ROOT`
+defaults to `TARGET`. It checks that the scenario's routes still exist with
+the right type and warns about any that don't.
+
+If the runtime fetch fails or there's no token, it falls back to a saved copy
+at `data/app.json` (gitignored) and says so in the log. With neither, naive
+mode still runs, with no route check. Treat the file as a fallback only.
+
+To refresh the saved copy:
 
 ```
-DOCS_ROOT=http://localhost:3000 DOCS_TOKEN=... npm run fetch:app-map
 DOCS_ROOT=https://hackwestern.com DOCS_TOKEN=... npm run fetch:app-map
 ```
 
-`DOCS_ROOT` defaults to `http://localhost:3000`. The route needs the bearer
-token in `DOCS_TOKEN`. Fetching from production is fine; it is one read-only
-request. (The `api.json` at the root is the older OpenAPI export and isn't used.)
+(`api.json` at the root is the older OpenAPI export and isn't used.)
 
 ## Safety
 

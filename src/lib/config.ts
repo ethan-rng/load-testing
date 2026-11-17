@@ -19,6 +19,9 @@ export const config = {
   testId: env("TEST_ID", `adhoc-${Date.now()}`),
   // Mutations stay off unless explicitly enabled.
   allowMutations: env("ALLOW_MUTATIONS", "false") === "true",
+  // Where to fetch the app map at runtime. Defaults to the load test target.
+  docsRoot: env("DOCS_ROOT", env("TARGET", "http://localhost:3000")).replace(/\/+$/, ""),
+  docsToken: env("DOCS_TOKEN", ""),
   // Optional single account, used when there is no data/users.json yet.
   email: env("TEST_EMAIL", ""),
   password: env("TEST_PASSWORD", ""),
