@@ -20,6 +20,13 @@ override it. Settings are env vars: `TARGET`, `MODE` (default `naive`), `PHASE` 
 `during`), `VUS`, `DURATION`, `RAMP_UP`, `ALLOW_MUTATIONS`, `TEST_EMAIL`,
 `TEST_PASSWORD`, `ALLOWED_HOSTS`.
 
+Check your setup before a run:
+
+```
+npm run check:env                # validates .env and the shell
+npm run check:env -- --online    # also tries the target, the app map and the test login
+```
+
 Each run writes `results/<testid>.json` (and an HTML report for longer runs).
 
 ## App map
