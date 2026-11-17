@@ -5,7 +5,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "run:naive": "./run.sh",
-    "mock": "node test/mock-server.mjs"
+    "mock": "node test/mock-server.mjs",
+    "fetch:app-map": "node scripts/fetch-app-map.mjs"
   },
   "devDependencies": {
     "@types/k6": "^1.0.0",

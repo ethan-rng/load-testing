@@ -31,6 +31,10 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname === "/api/auth/session")
     return json(200, authed ? { user: { id: "u" } } : {});
+  if (url.pathname === "/api/docs/app") {
+    if (req.headers.authorization !== "Bearer secret") return json(401, { message: "Unauthorized" });
+    return json(200, { version: 1, pages: [], rest: [{}], trpc: [{}, {}] });
+  }
   if (url.pathname === "/__counts") return json(200, counts);
 
   if (url.pathname.startsWith("/api/trpc/")) {

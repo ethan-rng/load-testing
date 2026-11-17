@@ -20,6 +20,20 @@ Settings are env vars: `TARGET`, `MODE` (default `naive`), `PHASE` (default
 
 Each run writes `results/<testid>.json` (and an HTML report for longer runs).
 
+## App map
+
+The scripts read the app's route and schema map from `data/app.json` (gitignored).
+Download it from the app's `/api/docs/app` route:
+
+```
+DOCS_ROOT=http://localhost:3000 DOCS_TOKEN=... npm run fetch:app-map
+DOCS_ROOT=https://hackwestern.com DOCS_TOKEN=... npm run fetch:app-map
+```
+
+`DOCS_ROOT` defaults to `http://localhost:3000`. The route needs the bearer
+token in `DOCS_TOKEN`. Fetching from production is fine; it is one read-only
+request. (The `api.json` at the root is the older OpenAPI export and isn't used.)
+
 ## Safety
 
 - Refuses `hackwestern.com`, and any host not in `ALLOWED_HOSTS`
