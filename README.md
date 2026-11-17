@@ -14,7 +14,9 @@ TARGET=http://localhost:3000 TEST_EMAIL=you@example.com TEST_PASSWORD='...' \
   VUS=10 DURATION=60s ./run.sh
 ```
 
-Settings are env vars: `TARGET`, `MODE` (default `naive`), `PHASE` (default
+Settings can go in a `.env` file (copy `.env.example`; `.env` is gitignored).
+`run.sh` and `npm run fetch:app-map` both read it, and values set in the shell
+override it. Settings are env vars: `TARGET`, `MODE` (default `naive`), `PHASE` (default
 `during`), `VUS`, `DURATION`, `RAMP_UP`, `ALLOW_MUTATIONS`, `TEST_EMAIL`,
 `TEST_PASSWORD`, `ALLOWED_HOSTS`.
 
