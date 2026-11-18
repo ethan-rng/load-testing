@@ -76,8 +76,27 @@ at a time, mutations can't be turned on. Only a few settings reach k6, so
 server secrets never do. If the server stops, it stops the active run, and on
 restart it cleans up any run left behind.
 
-Login isn't built yet, so the server needs `AUTH_MODE=none` and only listens on
-127.0.0.1. Don't expose it until GitHub login (next step) is in.
+### Sign-in (GitHub, hackwestern org)
+
+Set `AUTH_MODE=github` for anything other than your own laptop. Only active
+members of the `GITHUB_ORG` can open the page. Members of `LAUNCH_TEAM` can
+launch and stop runs; everyone else in the org can view. There is no default
+launch team: the server won't start without one.
+
+Setup:
+1. GitHub > Settings > Developer settings > OAuth Apps > New. Homepage URL is
+   `PUBLIC_URL`; callback URL is `PUBLIC_URL/auth/callback`. If the org restricts
+   third-party apps, an org owner has to approve it.
+2. Put the client id and secret, `PUBLIC_URL`, `LAUNCH_TEAM` and a random
+   `SESSION_SECRET` in `.env` (see `.env.example`).
+
+The app asks GitHub for `read:org` to check membership, then throws the GitHub
+token away. The session is a signed cookie (`SESSION_HOURS`, default 4), so
+removing someone from the org takes effect when their session ends. At most 10
+launches per person per hour.
+
+`AUTH_MODE=none` is for local use: no login, and the server only binds to
+127.0.0.1.
 
 ## Safety
 
@@ -91,7 +110,7 @@ Login isn't built yet, so the server needs `AUTH_MODE=none` and only listens on
 
 ```
 npm run typecheck
-npm test         # guardrail tests for the web UI's launch checks
+npm test         # launch guardrails and the sign-in flow (against a fake GitHub)
 npm run mock     # fake app on :3999 for trying the scripts without the real one
 ```
 

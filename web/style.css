@@ -32,3 +32,4 @@ pre { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; 
 iframe { width: 100%; height: 640px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
 a { color: var(--accent); }
 @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+button.link { background: none; color: var(--accent); padding: 0 4px; text-decoration: underline; }

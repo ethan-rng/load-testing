@@ -11,6 +11,7 @@ async function api(path, opts = {}) {
     ...opts,
     headers: { "content-type": "application/json", "x-requested-with": "runs-ui" },
   });
+  if (res.status === 401) { location.href = "/auth/login"; throw new Error("Signing in…"); }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || res.statusText);
   return data;
@@ -26,7 +27,11 @@ let stream = null;
 
 async function init() {
   const cfg = await api("/api/config");
-  $("who").textContent = `Signed in as ${cfg.user.login}`;
+  $("who").textContent = `Signed in as ${cfg.user.login}${cfg.user.canLaunch ? "" : " (view only)"}`;
+  if (cfg.authMode === "github") {
+    $("signout").hidden = false;
+    $("signout").addEventListener("click", async () => { await api("/auth/logout", { method: "POST" }); location.href = "/"; });
+  }
   const f = $("form");
   for (const t of cfg.targets) f.target.append(el("option", { value: t, textContent: t }));
   for (const m of cfg.modes) f.mode.append(el("option", { value: m, textContent: m }));
