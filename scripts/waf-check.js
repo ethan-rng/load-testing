@@ -6,15 +6,15 @@
 //
 // The workflow:
 //   1. From the machine that is NOT yet allowlisted, find the refusal point:
-//        npm run check:waf -- --preset=clock-500 --expect=blocked
+//        npm run check:waf -- --preset=poll-500 --expect=blocked
 //   2. Allow that machine's IP in Vercel (system bypass rule).
 //   3. Run the same load again and confirm nothing is refused:
-//        npm run check:waf -- --preset=clock-500
+//        npm run check:waf -- --preset=poll-500
 //
-// Presets (a "user" polls once every `interval` seconds, like a clock widget):
+// Presets (a "user" polls once every `interval` seconds, like a live widget):
 //   light            100 users, every 5s  =  20 req/s, 2 min
-//   clock-500        500 users, every 2s  = 250 req/s, 5 min
-//   clock-500-fast   500 users, every 1s  = 500 req/s, 5 min
+//   poll-500        500 users, every 2s  = 250 req/s, 5 min
+//   poll-500-fast   500 users, every 1s  = 500 req/s, 5 min
 //   burst            500 users, every 0.5s = 1000 req/s, 1 min
 //
 // Or set the shape yourself:
@@ -24,7 +24,7 @@
 // Other options:
 //   --target=URL     defaults to TARGET from .env / the shell
 //   --path=/api/...  defaults to /api/auth/csrf (cheap, public, no database).
-//                    To mimic the clock: --path=/api/trpc/clock.get (check it returns 200).
+//                    Another public choice: /api/schedule (check it returns 200).
 //   --expect=allowed (default) pass if nothing is refused
 //   --expect=blocked pass if Vercel does refuse
 //   --keep-going     don't stop at the first refusal
@@ -44,8 +44,8 @@ const WINDOW = 10; // seconds per reported row
 
 const PRESETS = {
   light: { users: 100, interval: 5, hold: 120 },
-  "clock-500": { users: 500, interval: 2, hold: 300 },
-  "clock-500-fast": { users: 500, interval: 1, hold: 300 },
+  "poll-500": { users: 500, interval: 2, hold: 300 },
+  "poll-500-fast": { users: 500, interval: 1, hold: 300 },
   burst: { users: 500, interval: 0.5, hold: 60 },
 };
 
@@ -243,7 +243,7 @@ if (expect === "allowed") {
           "  right after adding the rule can still fail until the block clears."
       : "INCONCLUSIVE: nothing was refused. Vercel's automatic protection may need more load or\n" +
           "  more time than this, or a rule you expect to trigger isn't active. Try a heavier\n" +
-          "  preset (clock-500-fast, then burst) or a longer --hold.",
+          "  preset (poll-500-fast, then burst) or a longer --hold.",
   );
 }
 process.exit(pass ? 0 : 1);

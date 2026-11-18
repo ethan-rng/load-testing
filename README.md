@@ -30,14 +30,14 @@ npm run check:env -- --online    # also tries the target, the app map and the te
 Find the load that Vercel refuses, then check the allow rule fixes it (dev only):
 
 ```
-npm run check:waf -- --preset=clock-500 --expect=blocked   # 1. find the refusal point
+npm run check:waf -- --preset=poll-500 --expect=blocked   # 1. find the refusal point
 # 2. allow this machine's IP in Vercel and wait for the rule to publish
-npm run check:waf -- --preset=clock-500                    # 3. same load, nothing refused
+npm run check:waf -- --preset=poll-500                    # 3. same load, nothing refused
 ```
 
-Presets (one "user" polls every few seconds, like a clock widget):
-`light` (20 req/s, 2 min), `clock-500` (500 users, 250 req/s, 5 min),
-`clock-500-fast` (500 req/s, 5 min), `burst` (1000 req/s, 1 min). It ramps up,
+Presets (one "user" polls every few seconds, like a live widget):
+`light` (20 req/s, 2 min), `poll-500` (500 users, 250 req/s, 5 min),
+`poll-500-fast` (500 req/s, 5 min), `burst` (1000 req/s, 1 min). It ramps up,
 holds the full rate, and stops at the first refusal. Or set `--users`,
 `--interval` and `--hold` yourself, or plain `--steps=5,20,50 --seconds=5`.
 `--path` picks the endpoint (default `/api/auth/csrf`, which is cheap).
