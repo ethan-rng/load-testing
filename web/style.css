@@ -176,6 +176,34 @@ dialog .lead { color: var(--text-light); margin: 4px 0 20px; }
 
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--text-heavy); color: #fff; padding: 10px 16px; border-radius: 10px; font-weight: 600; z-index: 10; max-width: calc(100vw - 32px); }
 
+/* ---- code viewer ---- */
+.code-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 16px; align-items: start; }
+.tree { padding: 8px; position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; }
+.tree details + details { margin-top: 4px; }
+.tree summary { display: flex; align-items: center; gap: 8px; padding: 8px; font-weight: 700; color: var(--text-heavy); cursor: pointer; list-style: none; border-radius: var(--radius-md); }
+.tree summary::-webkit-details-marker { display: none; }
+.tree summary:hover { background: var(--row); }
+.tree svg { width: 16px; height: 16px; flex: none; }
+.tree .blurb { font-size: 12px; color: var(--text-light); padding: 0 8px 4px 32px; }
+.tree ul { list-style: none; margin: 0; padding: 0; }
+.tree li a { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 20px; border-radius: var(--radius-md); color: var(--text-medium); text-decoration: none; font-size: 14px; overflow-wrap: anywhere; }
+.tree li a:hover { background: var(--row); }
+.tree li a[aria-current="page"] { background: var(--highlight); color: var(--active); font-weight: 600; }
+.viewer { min-width: 0; overflow: hidden; }
+.viewer-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border-subtle); }
+.viewer-path { font-weight: 700; color: var(--text-heavy); overflow-wrap: anywhere; }
+.small { font-size: 13px; }
+.code { overflow: auto; max-height: calc(100vh - 160px); padding: 12px 0; font: 13px/1.65 var(--mono); color: var(--text-heavy); background: var(--surface); }
+.ln { display: flex; min-width: max-content; }
+.ln:hover { background: var(--row); }
+.ln .n { flex: none; width: 52px; padding-right: 14px; text-align: right; color: var(--text-placeholder); user-select: none; }
+.ln .c { white-space: pre; padding-right: 20px; }
+.tok-comment { color: #6b7f92; font-style: italic; }
+.tok-string { color: #16803c; }
+.tok-number { color: #a34a00; }
+.tok-keyword { color: #0b6bc4; font-weight: 600; }
+.tok-key { color: #08559c; }
+
 .topbar { display: none; }
 
 @media (max-width: 860px) {
@@ -187,4 +215,7 @@ dialog .lead { color: var(--text-light); margin: 4px 0 20px; }
   .page-head h1 { font-size: 26px; }
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .btn-primary.full-mobile { width: 100%; }
+  .code-layout { grid-template-columns: minmax(0, 1fr); }
+  .tree { position: static; max-height: 260px; }
+  .code { max-height: 70vh; }
 }

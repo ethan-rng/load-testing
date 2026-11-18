@@ -1,10 +1,15 @@
 import { api, h, icon, state } from "./ui.js";
 import { runsView, runDetailView } from "./runs.js";
+import { codeView } from "./code.js";
 
-const NAV = [{ href: "#/runs", label: "Runs", icon: "runs", match: /^#\/runs/ }];
+const NAV = [
+  { href: "#/runs", label: "Runs", icon: "runs", match: /^#\/runs/ },
+  { href: "#/code", label: "Code", icon: "code", match: /^#\/code/ },
+];
 const routes = [
   [/^#\/runs\/([A-Za-z0-9_-]+)$/, runDetailView],
   [/^#\/runs$/, runsView],
+  [/^#\/code(?:\/(.+))?$/, codeView],
 ];
 
 function navLinks(current) {

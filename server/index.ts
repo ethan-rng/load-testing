@@ -4,6 +4,7 @@ import { extname, resolve, sep } from "node:path";
 import { ROOT, RESULTS_DIR, getRun, listRuns, loadStore } from "./store.ts";
 import { activeRunId, followLogs, reapOrphans, startRun, stopAll, stopRun } from "./launcher.ts";
 import { LIMITS, MODES, PHASES, allowedTargets, assertConfig, validateParams } from "./validate.ts";
+import { listFiles, readCodeFile } from "./code.ts";
 import { clearCookies, finishLogin, loadAuthConfig, readSession, startLogin, type AuthConfig, type User } from "./auth.ts";
 
 const PORT = Number(process.env.PORT ?? 8080);
@@ -154,6 +155,12 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
 
   if (path === "/api/config" && method === "GET") {
     return send(res, 200, { user, authMode: authCfg ? "github" : "none", targets: allowedTargets(), limits: LIMITS, modes: MODES, phases: PHASES, activeRunId: activeRunId() });
+  }
+
+  if (path === "/api/code/tree" && method === "GET") return send(res, 200, listFiles(ROOT));
+  if (path === "/api/code/file" && method === "GET") {
+    const f = readCodeFile(ROOT, url.searchParams.get("path") ?? "");
+    return f ? send(res, 200, f) : fail(res, 404, "That file isn't available.");
   }
 
   if (path === "/api/runs" && method === "GET") return send(res, 200, listRuns().slice(0, 100));
