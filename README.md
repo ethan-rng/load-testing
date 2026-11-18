@@ -27,6 +27,17 @@ npm run check:env                # validates .env and the shell
 npm run check:env -- --online    # also tries the target, the app map and the test login
 ```
 
+Check the Vercel firewall rule lets this machine through:
+
+```
+npm run check:waf                       # from the allowlisted machine: expect no blocks
+npm run check:waf -- --expect=blocked   # from a non-allowlisted network: expect blocks
+```
+
+It steps the request rate up (default 5, 20, 50 per second) against a cheap
+public path and reports status codes and Vercel's mitigation headers. Use
+`--steps`, `--seconds` and `--path` to change it.
+
 Each run writes `results/<testid>.json` (and an HTML report for longer runs).
 
 ## App map

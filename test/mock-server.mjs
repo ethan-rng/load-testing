@@ -4,8 +4,20 @@ import http from "node:http";
 
 const sessions = new Set();
 const counts = {};
+// MOCK_LIMIT=<n> pretends to be a firewall: more than n requests in one second
+// on any path gets a Vercel-style challenge response.
+const limit = Number(process.env.MOCK_LIMIT || 0);
+let windowStart = 0, windowCount = 0;
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, "http://x");
+  if (limit) {
+    const now = Math.floor(Date.now() / 1000);
+    if (now !== windowStart) { windowStart = now; windowCount = 0; }
+    if (++windowCount > limit) {
+      res.writeHead(429, { "content-type": "text/html", "x-vercel-mitigated": "challenge", "x-vercel-id": "mock::fw" });
+      return res.end("<html>Vercel Security Checkpoint</html>");
+    }
+  }
   counts[url.pathname] = (counts[url.pathname] || 0) + 1;
   const json = (code, body, headers = {}) => {
     res.writeHead(code, { "content-type": "application/json", ...headers });

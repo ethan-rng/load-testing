@@ -7,7 +7,8 @@
     "run:naive": "./run.sh",
     "mock": "node test/mock-server.mjs",
     "fetch:app-map": "node --env-file-if-exists=.env scripts/fetch-app-map.mjs",
-    "check:env": "node scripts/env.js"
+    "check:env": "node scripts/env.js",
+    "check:waf": "node scripts/waf-check.js"
   },
   "devDependencies": {
     "@types/k6": "^1.0.0",
