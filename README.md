@@ -63,6 +63,22 @@ DOCS_ROOT=https://hackwestern.com DOCS_TOKEN=... npm run fetch:app-map
 
 (`api.json` at the root is the older OpenAPI export and isn't used.)
 
+## Web UI (local for now)
+
+```
+npm run server        # then open http://127.0.0.1:8080
+```
+
+A page to launch a run, watch its log live, stop it, and open past reports.
+Launch values are checked on the server: target must be in `ALLOWED_TARGETS`
+(production is refused at startup), at most 500 users and 10 minutes, one run
+at a time, mutations can't be turned on. Only a few settings reach k6, so
+server secrets never do. If the server stops, it stops the active run, and on
+restart it cleans up any run left behind.
+
+Login isn't built yet, so the server needs `AUTH_MODE=none` and only listens on
+127.0.0.1. Don't expose it until GitHub login (next step) is in.
+
 ## Safety
 
 - Refuses `hackwestern.com`, and any host not in `ALLOWED_HOSTS`
@@ -75,6 +91,7 @@ DOCS_ROOT=https://hackwestern.com DOCS_TOKEN=... npm run fetch:app-map
 
 ```
 npm run typecheck
+npm test         # guardrail tests for the web UI's launch checks
 npm run mock     # fake app on :3999 for trying the scripts without the real one
 ```
 

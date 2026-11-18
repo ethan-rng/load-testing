@@ -36,6 +36,9 @@ export function setup(): { mapSource: MapSource } {
 }
 
 export const options: Options = {
+  // Each VU logs in once and keeps its session. By default k6 clears cookies
+  // at the start of every iteration, which silently logged VUs out after the first.
+  noCookiesReset: true,
   scenarios: {
     naive: {
       executor: "ramping-vus",

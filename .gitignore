@@ -6,3 +6,4 @@ data/users.json
 data/profile.*.json
 data/app.json
 .env
+data/runs.json

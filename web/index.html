@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Load Tests</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>Load tests</h1>
+    <span id="who"></span>
+  </header>
+  <main>
+    <section class="card" id="launch">
+      <h2>Launch a run</h2>
+      <form id="form">
+        <label>Target <select name="target"></select></label>
+        <label>Mode <select name="mode"></select></label>
+        <label>Phase <select name="phase"></select></label>
+        <label>Users (VUs) <input name="vus" type="number" min="1" value="10"></label>
+        <label>Duration <input name="duration" value="30s" placeholder="30s or 5m"></label>
+        <label>Ramp-up <input name="rampUp" value="10s" placeholder="10s"></label>
+        <p class="hint" id="limits"></p>
+        <button type="submit" id="go">Start</button>
+        <p class="error" id="formError" role="alert"></p>
+      </form>
+    </section>
+
+    <section class="card" id="runs">
+      <h2>Runs</h2>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>When</th><th>Status</th><th>Target</th><th>VUs</th><th>p95</th><th>Errors</th><th>By</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card wide" id="detail" hidden>
+      <div class="row">
+        <h2 id="dTitle"></h2>
+        <button id="stop" class="danger" hidden>Stop run</button>
+      </div>
+      <dl id="dMeta"></dl>
+      <h3>Log</h3>
+      <pre id="log" aria-live="polite"></pre>
+      <div id="reportBox" hidden>
+        <h3>Report</h3>
+        <p class="hint"><a id="reportLink" target="_blank" rel="noopener">Open full page</a> · <a id="jsonLink" target="_blank" rel="noopener">summary JSON</a></p>
+        <iframe id="report" title="k6 report" sandbox="allow-scripts"></iframe>
+      </div>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

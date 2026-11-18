@@ -3,15 +3,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p server",
     "run:naive": "./run.sh",
     "mock": "node test/mock-server.mjs",
     "fetch:app-map": "node --env-file-if-exists=.env scripts/fetch-app-map.mjs",
     "check:env": "node scripts/env.js",
-    "check:waf": "node scripts/waf-check.js"
+    "check:waf": "node scripts/waf-check.js",
+    "server": "node --env-file-if-exists=.env server/index.ts",
+    "test": "node --test test/*.test.ts"
   },
   "devDependencies": {
     "@types/k6": "^1.0.0",
+    "@types/node": "^26.6.6",
     "typescript": "^5.6.0"
   }
 }

@@ -1,0 +1,166 @@
+import http, { type IncomingMessage, type ServerResponse } from "node:http";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { ROOT, RESULTS_DIR, getRun, listRuns, loadStore } from "./store.ts";
+import { activeRunId, followLogs, reapOrphans, startRun, stopAll, stopRun } from "./launcher.ts";
+import { LIMITS, MODES, PHASES, allowedTargets, assertConfig, validateParams } from "./validate.ts";
+
+const PORT = Number(process.env.PORT ?? 8080);
+const HOST = process.env.HOST ?? "127.0.0.1";
+const AUTH_MODE = process.env.AUTH_MODE ?? "";
+
+// ---- startup checks ----
+try {
+  assertConfig();
+} catch (e) {
+  console.error(e instanceof Error ? e.message : e);
+  process.exit(1);
+}
+if (AUTH_MODE !== "none") {
+  console.error("No login is built yet. For local use only, set AUTH_MODE=none (it only binds to 127.0.0.1).");
+  process.exit(1);
+}
+if (HOST !== "127.0.0.1" && HOST !== "localhost") {
+  console.error(`AUTH_MODE=none must not be exposed (HOST=${HOST}). Bind to 127.0.0.1.`);
+  process.exit(1);
+}
+loadStore();
+reapOrphans(listRuns());
+
+// ---- auth (placeholder until GitHub login lands) ----
+interface User { login: string; canLaunch: boolean }
+function authenticate(_req: IncomingMessage): User | null {
+  return { login: "local", canLaunch: true };
+}
+
+// ---- helpers ----
+const SECURITY = { "x-content-type-options": "nosniff", "referrer-policy": "no-referrer" };
+function send(res: ServerResponse, code: number, body: unknown, extra: Record<string, string> = {}): void {
+  const isStr = typeof body === "string";
+  res.writeHead(code, { ...SECURITY, "content-type": isStr ? "text/plain; charset=utf-8" : "application/json", ...extra });
+  res.end(isStr ? body : JSON.stringify(body));
+}
+const fail = (res: ServerResponse, code: number, error: string) => send(res, code, { error });
+
+async function readJson(req: IncomingMessage): Promise<unknown> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const c of req) {
+    size += (c as Buffer).length;
+    if (size > 10_000) throw new Error("Body too large.");
+    chunks.push(c as Buffer);
+  }
+  return JSON.parse(Buffer.concat(chunks).toString() || "{}");
+}
+
+const STATIC: Record<string, [string, string]> = {
+  "/": ["index.html", "text/html; charset=utf-8"],
+  "/app.js": ["app.js", "text/javascript; charset=utf-8"],
+  "/style.css": ["style.css", "text/css; charset=utf-8"],
+};
+const PAGE_CSP = "default-src 'self'; frame-src 'self'; img-src 'self' data:; frame-ancestors 'none'";
+// The k6 report is self-contained but runs its own scripts, so it is sandboxed
+// away from this origin and cannot make network requests.
+const REPORT_CSP = "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; frame-ancestors 'self'";
+const ID = /^[A-Za-z0-9_-]{1,100}$/;
+
+// ---- routes ----
+async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const url = new URL(req.url ?? "/", "http://x");
+  const method = req.method ?? "GET";
+  const path = url.pathname;
+
+  const user = authenticate(req);
+  if (!user) return fail(res, 401, "Sign in required.");
+
+  if (method !== "GET" && method !== "HEAD") {
+    // Same-origin only: a custom header can't be set by a cross-site form, and Origin must match.
+    if (req.headers["x-requested-with"] !== "runs-ui") return fail(res, 403, "Missing request header.");
+    const origin = req.headers.origin;
+    if (origin && new URL(origin).host !== req.headers.host) return fail(res, 403, "Cross-origin request refused.");
+  }
+
+  const stat = STATIC[path];
+  if (stat && (method === "GET" || method === "HEAD")) {
+    const body = readFileSync(resolve(ROOT, "web", stat[0]));
+    res.writeHead(200, { ...SECURITY, "content-type": stat[1], "content-security-policy": PAGE_CSP });
+    return void res.end(body);
+  }
+
+  if (path === "/api/config" && method === "GET") {
+    return send(res, 200, { user, targets: allowedTargets(), limits: LIMITS, modes: MODES, phases: PHASES, activeRunId: activeRunId() });
+  }
+
+  if (path === "/api/runs" && method === "GET") return send(res, 200, listRuns().slice(0, 100));
+
+  if (path === "/api/runs" && method === "POST") {
+    if (!user.canLaunch) return fail(res, 403, "You can view runs but not launch them.");
+    let body: unknown;
+    try { body = await readJson(req); } catch (e) { return fail(res, 400, e instanceof Error ? e.message : "Bad JSON."); }
+    const v = validateParams(body);
+    if (!v.ok) return fail(res, 400, v.error);
+    const r = startRun(v.params, user.login);
+    if (!r.ok) return fail(res, 409, r.error);
+    console.log(`run ${r.run.id} started by ${user.login}: ${JSON.stringify(v.params)}`);
+    return send(res, 201, r.run);
+  }
+
+  const m = /^\/api\/runs\/([^/]+)(\/logs|\/stop)?$/.exec(path);
+  if (m) {
+    const id = m[1];
+    if (!ID.test(id)) return fail(res, 400, "Bad run id.");
+    const run = getRun(id);
+    if (!run) return fail(res, 404, "No such run.");
+
+    if (!m[2] && method === "GET") return send(res, 200, run);
+
+    if (m[2] === "/stop" && method === "POST") {
+      if (!user.canLaunch) return fail(res, 403, "You can view runs but not stop them.");
+      console.log(`run ${id} stop requested by ${user.login}`);
+      return stopRun(id) ? send(res, 200, { stopping: true }) : fail(res, 409, "That run is not running.");
+    }
+
+    if (m[2] === "/logs" && method === "GET") {
+      res.writeHead(200, { ...SECURITY, "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
+      const stop = followLogs(
+        id,
+        (l) => res.write(`data: ${JSON.stringify(l)}\n\n`),
+        () => { res.write("event: end\ndata: {}\n\n"); res.end(); },
+      );
+      req.on("close", () => stop?.());
+      return;
+    }
+  }
+
+  const f = /^\/results\/([A-Za-z0-9_-]{1,100})\.(html|json|log)$/.exec(path);
+  if (f && method === "GET") {
+    if (!getRun(f[1])) return fail(res, 404, "No such run.");
+    const file = resolve(RESULTS_DIR, `${f[1]}.${f[2]}`);
+    if (!existsSync(file)) return fail(res, 404, "Not available for this run.");
+    const types = { html: "text/html; charset=utf-8", json: "application/json", log: "text/plain; charset=utf-8" } as const;
+    const headers: Record<string, string> = { ...SECURITY, "content-type": types[f[2] as keyof typeof types] };
+    if (f[2] === "html") headers["content-security-policy"] = REPORT_CSP;
+    res.writeHead(200, headers);
+    return void res.end(readFileSync(file));
+  }
+
+  return fail(res, 404, "Not found.");
+}
+
+const server = http.createServer((req, res) => {
+  route(req, res).catch((err) => {
+    console.error("request failed:", err);
+    if (!res.headersSent) fail(res, 500, "Server error.");
+    else res.end();
+  });
+});
+server.listen(PORT, HOST, () => console.log(`Load test UI on http://${HOST}:${PORT} (AUTH_MODE=none, local only)`));
+
+for (const sig of ["SIGINT", "SIGTERM"] as const) {
+  process.on(sig, async () => {
+    console.log(`${sig}: stopping any active run before exit`);
+    server.close();
+    await stopAll();
+    process.exit(0);
+  });
+}
