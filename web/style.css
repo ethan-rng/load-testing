@@ -204,6 +204,68 @@ dialog .lead { color: var(--text-light); margin: 4px 0 20px; }
 .tok-keyword { color: #0b6bc4; font-weight: 600; }
 .tok-key { color: #08559c; }
 
+/* ---- profiles ---- */
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 999px; border: 0; background: var(--nav); color: var(--text-medium); font-weight: 600; cursor: pointer; }
+.chip:hover { background: var(--nav-selected); }
+.chip[aria-pressed="true"] { background: var(--primary); color: #fff; }
+.chip-n { font-size: 12px; opacity: .8; font-variant-numeric: tabular-nums; }
+.search { max-width: 260px; }
+.profiles-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+.mix { position: sticky; top: 16px; }
+.bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.bar-label { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; margin-bottom: 4px; }
+.bar-name { color: var(--text-heavy); font-weight: 600; min-width: 0; }
+.bar-val { color: var(--text-light); font-variant-numeric: tabular-nums; }
+.bar-track { height: 8px; background: var(--inset); border-radius: 99px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--primary); border-radius: 99px; }
+.bulk { display: flex; align-items: center; gap: 8px; padding: 10px 14px; margin-bottom: 12px; background: var(--highlight); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.bulk strong { margin-right: auto; color: var(--text-heavy); }
+th.check, td.check { width: 40px; padding-right: 0; }
+td.name-cell { white-space: normal; min-width: 180px; }
+.name-cell .strong { font-weight: 600; }
+.name-cell .small { margin-top: 1px; }
+tr.off td { color: var(--text-light); }
+.empty-wrap { padding: 16px; }
+.pager { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-top: 1px solid var(--border-subtle); }
+input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+
+.gen .row-gap { display: flex; gap: 8px; margin-top: 8px; }
+.file-info { font-size: 13px; margin-top: 6px; }
+.howto { background: var(--inset); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 16px; font-size: 14px; }
+.snippet { margin: 8px 0 0; font: 12.5px/1.6 var(--mono); white-space: pre-wrap; color: var(--text-heavy); }
+.check-row { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; font-weight: 600; color: var(--text-heavy); }
+.check-row input { margin-top: 3px; }
+.check-row small, .field small { display: block; font-weight: 500; color: var(--text-light); font-size: 13px; }
+.adv { margin: 4px 0 12px; } .adv summary { cursor: pointer; font-weight: 600; color: var(--text-heavy); margin-bottom: 10px; }
+dialog.wide-dialog, dialog:has(.gen) { width: min(560px, calc(100vw - 32px)); }
+dialog:has(.gen) form { max-height: calc(100vh - 48px); overflow: auto; }
+
+.settings-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 16px; align-items: start; }
+.switch-row { display: flex; align-items: center; gap: 10px; height: 40px; font-weight: 500; }
+.switch-row input[role="switch"] { appearance: none; width: 38px; height: 22px; border-radius: 99px; background: var(--border-control); position: relative; cursor: pointer; transition: background .15s; }
+.switch-row input[role="switch"]::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.switch-row input[role="switch"]:checked { background: var(--primary); }
+.switch-row input[role="switch"]:checked::after { transform: translateX(16px); }
+.card + .card { margin-top: 16px; }
+.row-between { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.timeline { position: relative; height: 26px; margin: 8px 6px 18px; }
+.timeline-line { position: absolute; top: 12px; left: 0; right: 0; height: 2px; background: var(--border); border-radius: 2px; }
+.tick { position: absolute; top: 6px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--primary); border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--primary); }
+.tick.mutation { background: var(--warn); box-shadow: 0 0 0 1px var(--warn); }
+.steps { display: grid; gap: 8px; margin-bottom: 12px; }
+.step { display: grid; grid-template-columns: 28px minmax(0, 1fr) 120px 150px auto; gap: 10px; align-items: center; }
+.step-n { color: var(--text-light); font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.wait { display: flex; align-items: center; gap: 6px; } .wait .input { width: 92px; }
+.step-actions { display: flex; gap: 2px; }
+.icon-btn { width: 32px; height: 32px; border: 0; border-radius: var(--radius-md); background: none; color: var(--text-light); cursor: pointer; font-size: 15px; }
+.icon-btn:hover:not(:disabled) { background: var(--highlight); color: var(--text-heavy); }
+.icon-btn:disabled { opacity: .35; cursor: default; }
+.savebar { position: sticky; bottom: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; padding: 12px 16px; background: var(--text-heavy); color: #fff; border-radius: 12px; box-shadow: 0 8px 24px rgba(11, 43, 74, .3); }
+.savebar .btn-secondary { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .4); }
+.savebar .btn-secondary:hover { background: rgba(255, 255, 255, .12); }
 .topbar { display: none; }
 
 @media (max-width: 860px) {
@@ -218,4 +280,11 @@ dialog .lead { color: var(--text-light); margin: 4px 0 20px; }
   .code-layout { grid-template-columns: minmax(0, 1fr); }
   .tree { position: static; max-height: 260px; }
   .code { max-height: 70vh; }
+  .hide-sm { display: none; }
+  .profiles-layout { grid-template-columns: minmax(0, 1fr); }
+  .mix { position: static; order: -1; }
+  .settings-grid { grid-template-columns: 1fr 1fr; }
+  .step { grid-template-columns: 24px minmax(0, 1fr) auto; }
+  .step select, .step .wait { grid-column: 2; }
+  .step-actions { grid-column: 3; grid-row: 1; }
 }

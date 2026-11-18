@@ -76,6 +76,40 @@ at a time, mutations can't be turned on. Only a few settings reach k6, so
 server secrets never do. If the server stops, it stops the active run, and on
 restart it cleans up any run left behind.
 
+### Profiles (simulated users)
+
+A profile is one recorded session: an ordered list of tRPC calls with the wait
+before each. The Profiles page generates them from a D1 export, and you can then
+edit steps and waits, set a weight (higher is picked more often), enable or
+disable, duplicate, or delete them. **Publish to k6** writes the enabled ones to
+`data/profile.<phase>.json`, which the realistic mode will read (not built yet).
+
+Getting data in: D1 exports as SQL, so convert it to a SQLite file and upload it
+on the page (or drop it in `data/imports/`):
+
+```
+wrangler d1 export <database> --remote --output=d1.sql
+sqlite3 d1.db < d1.sql
+```
+
+No D1 yet? `npm run sample:d1` writes a fake export to `data/imports/` to try it.
+
+Generation splits each user's calls into sessions wherever they go quiet (30 min
+by default), skips failed calls, writes and anything on the never-call list
+(`src/lib/denylist.ts`), shortens very long waits, and takes a random sample if
+there are more sessions than you asked for. User hashes and timestamps are used
+to build sessions and are not stored; only the order of calls and the gaps
+between them are kept. Profiles live in `data/profiles.db` (SQLite, via Node's
+built-in `node:sqlite`, which Node still labels experimental).
+
+### Code page
+
+Read-only view of this project's source, so people can see what a run does. Only
+source folders and a few root files can be opened. `.env`, `data/`, `results/`,
+`node_modules` and `.git` are not reachable, and symlinks can't be used to get
+around that. There's deliberately no editing: that would let anyone who can
+launch runs execute their own code on the server.
+
 ### Sign-in (GitHub, hackwestern org)
 
 Set `AUTH_MODE=github` for anything other than your own laptop. Only active

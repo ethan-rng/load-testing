@@ -10,7 +10,8 @@
     "check:env": "node scripts/env.js",
     "check:waf": "node scripts/waf-check.js",
     "server": "node --env-file-if-exists=.env server/index.ts",
-    "test": "node --test test/*.test.ts"
+    "test": "node --test test/*.test.ts",
+    "sample:d1": "node scripts/make-sample-d1.ts data/imports/sample-d1.db"
   },
   "devDependencies": {
     "@types/k6": "^1.0.0",
