@@ -18,7 +18,8 @@ const baseEnv = (extra: Record<string, string> = {}) => ({
   PATH: process.env.PATH ?? "", AUTH_MODE: "github", PORT: String(PORT), PUBLIC_URL: BASE,
   GITHUB_CLIENT_ID: "id", GITHUB_CLIENT_SECRET: "secret", GITHUB_ORG: "hackwestern", LAUNCH_TEAM: "hw13-web",
   SESSION_SECRET: SECRET, ALLOWED_TARGETS: "http://localhost:3999",
-  RUNS_FILE: join(mkdtempSync(join(tmpdir(), "lt-")), "runs.json"),
+  RUNS_FILE: join(mkdtempSync(join(tmpdir(), "lt-")), "runs.json"), DATA_DIR: mkdtempSync(join(tmpdir(), "lt-data-")),
+  PROFILES_DB: join(mkdtempSync(join(tmpdir(), "lt-")), "profiles.db"), IMPORTS_DIR: mkdtempSync(join(tmpdir(), "lt-imports-")),
   GITHUB_WEB_URL: fake?.url ?? "", GITHUB_API_URL: fake?.url ?? "", ...extra,
 });
 
@@ -150,4 +151,19 @@ test("server won't start with missing team or no auth mode", () => {
   const noMode = run({ PORT: String(PORT + 1) }, ["AUTH_MODE"]);
   assert.notEqual(noMode.status, 0);
   assert.match(noMode.stderr, /AUTH_MODE/);
+});
+
+test("view-only members can read profiles but not change them; launchers can", async () => {
+  const bob = (await signIn("bob")).cookie!;
+  assert.equal((await api("/api/profiles", bob)).status, 200);
+  assert.equal((await api("/api/imports", bob)).status, 200);
+  assert.equal((await post("/api/profiles", bob, { name: "x" })).status, 403);
+  assert.equal((await post("/api/profiles/bulk", bob, { action: "delete", ids: [1] })).status, 403);
+  assert.equal((await post("/api/profiles/generate", bob, { file: "a.db", phase: "during" })).status, 403);
+  assert.equal((await post("/api/profiles/publish", bob, { phase: "during" })).status, 403);
+  assert.equal((await api("/api/imports", bob, { method: "POST", headers: { "x-requested-with": "runs-ui", "x-filename": "a.db" }, body: "x" })).status, 403);
+  const alice = (await signIn("alice")).cookie!;
+  assert.equal((await post("/api/profiles", alice, { name: "from alice" })).status, 201);
+  assert.equal((await api("/api/profiles", undefined)).status, 401, "signed-out users get nothing");
+  assert.equal((await api("/api/imports", undefined)).status, 401);
 });

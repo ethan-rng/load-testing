@@ -7,3 +7,6 @@ data/profile.*.json
 data/app.json
 .env
 data/runs.json
+data/profiles.db*
+data/imports/
+data/.*.tmp

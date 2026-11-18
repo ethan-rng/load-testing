@@ -1,10 +1,12 @@
 import http, { type IncomingMessage, type ServerResponse } from "node:http";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { extname, resolve, sep } from "node:path";
 import { ROOT, RESULTS_DIR, getRun, listRuns, loadStore } from "./store.ts";
 import { activeRunId, followLogs, reapOrphans, startRun, stopAll, stopRun } from "./launcher.ts";
 import { LIMITS, MODES, PHASES, allowedTargets, assertConfig, validateParams } from "./validate.ts";
 import { listFiles, readCodeFile } from "./code.ts";
+import { openProfilesDb } from "./profiles.ts";
+import { createProfilesApi } from "./profiles-api.ts";
 import { clearCookies, finishLogin, loadAuthConfig, readSession, startLogin, type AuthConfig, type User } from "./auth.ts";
 
 const PORT = Number(process.env.PORT ?? 8080);
@@ -37,6 +39,13 @@ if (AUTH_MODE === "github") {
 }
 loadStore();
 reapOrphans(listRuns());
+const DATA_DIR = resolve(ROOT, process.env.DATA_DIR ?? "data");
+mkdirSync(DATA_DIR, { recursive: true });
+const profilesApi = createProfilesApi(
+  openProfilesDb(resolve(ROOT, process.env.PROFILES_DB ?? "data/profiles.db")),
+  resolve(ROOT, process.env.IMPORTS_DIR ?? "data/imports"),
+  DATA_DIR,
+);
 
 // ---- auth ----
 function authenticate(req: IncomingMessage): User | null {
@@ -162,6 +171,8 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const f = readCodeFile(ROOT, url.searchParams.get("path") ?? "");
     return f ? send(res, 200, f) : fail(res, 404, "That file isn't available.");
   }
+
+  if (await profilesApi({ req, res, url, method, path, user, send, fail, readJson })) return;
 
   if (path === "/api/runs" && method === "GET") return send(res, 200, listRuns().slice(0, 100));
 
