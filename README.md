@@ -27,16 +27,20 @@ npm run check:env                # validates .env and the shell
 npm run check:env -- --online    # also tries the target, the app map and the test login
 ```
 
-Check the Vercel firewall rule lets this machine through:
+Find the load that Vercel refuses, then check the allow rule fixes it (dev only):
 
 ```
-npm run check:waf                       # from the allowlisted machine: expect no blocks
-npm run check:waf -- --expect=blocked   # from a non-allowlisted network: expect blocks
+npm run check:waf -- --preset=clock-500 --expect=blocked   # 1. find the refusal point
+# 2. allow this machine's IP in Vercel and wait for the rule to publish
+npm run check:waf -- --preset=clock-500                    # 3. same load, nothing refused
 ```
 
-It steps the request rate up (default 5, 20, 50 per second) against a cheap
-public path and reports status codes and Vercel's mitigation headers. Use
-`--steps`, `--seconds` and `--path` to change it.
+Presets (one "user" polls every few seconds, like a clock widget):
+`light` (20 req/s, 2 min), `clock-500` (500 users, 250 req/s, 5 min),
+`clock-500-fast` (500 req/s, 5 min), `burst` (1000 req/s, 1 min). It ramps up,
+holds the full rate, and stops at the first refusal. Or set `--users`,
+`--interval` and `--hold` yourself, or plain `--steps=5,20,50 --seconds=5`.
+`--path` picks the endpoint (default `/api/auth/csrf`, which is cheap).
 
 Each run writes `results/<testid>.json` (and an HTML report for longer runs).
 
