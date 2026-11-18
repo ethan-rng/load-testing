@@ -39,6 +39,9 @@ function fetchRuntime(): AppMap | null {
   const res = http.get(`${config.docsRoot}/api/docs/app`, {
     headers: { authorization: `Bearer ${config.docsToken}` },
     tags: { name: "setup.app-map" },
+    // We handle the status ourselves; a 401 here must not count as a failed
+    // request in the load results.
+    responseCallback: http.expectedStatuses({ min: 200, max: 599 }),
   });
   if (res.status !== 200) {
     console.warn(`App map fetch from ${config.docsRoot} returned ${res.status}.`);

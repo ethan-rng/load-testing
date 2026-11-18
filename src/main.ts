@@ -1,3 +1,4 @@
+import http from "k6/http";
 import { Options } from "k6/options";
 import { config, assertSafeTarget } from "./lib/config.ts";
 import { naive, anonymousSteps, hackerSteps } from "./scenarios/naive.ts";
@@ -9,6 +10,17 @@ export function setup(): { mapSource: MapSource } {
   if (config.mode !== "naive") {
     throw new Error(
       `MODE=${config.mode} is not built yet. Only MODE=naive works for now.`,
+    );
+  }
+
+  // Stop before any load if the target doesn't answer at all.
+  const probe = http.get(`${config.target}/api/auth/csrf`, {
+    tags: { name: "setup.probe" },
+    timeout: "10s",
+  });
+  if (probe.status === 0) {
+    throw new Error(
+      `Target ${config.target} is not reachable (${probe.error || "no response"}). Nothing was sent.`,
     );
   }
 
@@ -42,7 +54,9 @@ export const options: Options = {
     phase: config.phase,
   },
   thresholds: {
-    http_req_failed: ["rate<0.01"],
+    // abortOnFail stops a run that is mostly failing instead of hammering a
+    // target that has stopped answering.
+    http_req_failed: [{ threshold: "rate<0.01", abortOnFail: true, delayAbortEval: "10s" }],
     http_req_duration: ["p(95)<800"],
   },
 };

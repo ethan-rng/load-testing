@@ -45,7 +45,12 @@ let loggedIn: boolean | undefined;
 export function naive(): void {
   const user = users.length > 0 ? users[(__VU - 1) % users.length] : undefined;
 
-  if (user && loggedIn === undefined) loggedIn = login(user);
+  if (user && !loggedIn) {
+    loggedIn = login(user);
+    // Back off after a failed login so an unreachable server or a bad account
+    // can't turn into a tight retry loop.
+    if (!loggedIn) sleep(5);
+  }
 
   const steps = loggedIn ? [...anonymousSteps, ...hackerSteps] : anonymousSteps;
   for (const s of steps) {
