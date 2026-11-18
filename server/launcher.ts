@@ -6,8 +6,11 @@ import { EventEmitter } from "node:events";
 import { ROOT, RESULTS_DIR, addRun, getRun, runningRun, updateRun, type Run } from "./store.ts";
 import type { RunParams } from "./validate.ts";
 
+export interface Progress { pct: number; vus: number; maxVus: number }
+
 interface Live {
   child: ChildProcess;
+  progress: Progress | null;
   lines: string[];
   events: EventEmitter;
   stopping: boolean;
@@ -20,6 +23,19 @@ const PASS_THROUGH = ["PATH", "HOME", "DOCS_ROOT", "DOCS_TOKEN", "TEST_EMAIL", "
 
 const ANSI = /\x1b\[[0-9;?]*[ -/]*[@-~]/g;
 const clean = (s: string) => s.replace(ANSI, "");
+
+// k6 repeats a progress bar and a status line every second, and starts with a
+// logo. The UI shows progress as a bar, so none of that goes in the log.
+const PROGRESS = /^\s*\w+\s+\S?\s*\[\s*(\d+)%\s*\]\s+(\d+)\/(\d+)\s+VUs/;
+const NOISE = [
+  /^running \(\d+m[\d.]+s\)/,
+  /^\s*\w+\s+\S?\s*\[\s*\d+%\s*\]/,
+  /^[\s/\\|_()‾`.,'-]*(Grafana)?[\s/\\|_()‾`.,'-]*$/,
+];
+function parseProgress(line: string): Progress | null {
+  const m = PROGRESS.exec(line);
+  return m ? { pct: Number(m[1]), vus: Number(m[2]), maxVus: Number(m[3]) } : null;
+}
 
 function newId(p: RunParams): string {
   const d = new Date();
@@ -58,7 +74,7 @@ export function startRun(params: RunParams, user: string): StartResult {
   const log = createWriteStream(resolve(RESULTS_DIR, `${id}.log`));
   // detached gives the child its own process group, so Stop can signal k6 too.
   const child = spawn(resolve(ROOT, "run.sh"), [], { cwd: ROOT, env, detached: true });
-  const state: Live = { child, lines: [], events: new EventEmitter(), stopping: false };
+  const state: Live = { child, progress: null, lines: [], events: new EventEmitter(), stopping: false };
   live.set(id, state);
   run.pid = child.pid ?? null;
   addRun(run);
@@ -67,6 +83,9 @@ export function startRun(params: RunParams, user: string): StartResult {
     log.write(chunk);
     for (const line of clean(chunk.toString()).split(/\r?\n|\r/)) {
       if (!line.trim()) continue;
+      const p = parseProgress(line);
+      if (p) { state.progress = p; state.events.emit("progress", p); continue; }
+      if (NOISE.some((re) => re.test(line))) continue;
       if (state.lines.length < MAX_LINES) state.lines.push(line);
       state.events.emit("line", line);
     }
@@ -102,18 +121,24 @@ export function stopRun(id: string): boolean {
 }
 
 /** Lines so far, plus a way to follow new ones. Works for finished runs too. */
-export function followLogs(id: string, onLine: (l: string) => void, onEnd: () => void): (() => void) | null {
+export function followLogs(
+  id: string, onLine: (l: string) => void, onEnd: () => void, onProgress: (p: Progress) => void = () => {},
+): (() => void) | null {
   const s = live.get(id);
   if (s) {
     for (const l of s.lines) onLine(l);
+    if (s.progress) onProgress(s.progress);
     s.events.on("line", onLine);
+    s.events.on("progress", onProgress);
     s.events.once("end", onEnd);
-    return () => { s.events.off("line", onLine); s.events.off("end", onEnd); };
+    return () => { s.events.off("line", onLine); s.events.off("progress", onProgress); s.events.off("end", onEnd); };
   }
   if (!getRun(id)) return null;
   const f = resolve(RESULTS_DIR, `${id}.log`);
   if (existsSync(f)) {
-    for (const line of clean(readFileSync(f, "utf8")).split(/\r?\n|\r/)) if (line.trim()) onLine(line);
+    for (const line of clean(readFileSync(f, "utf8")).split(/\r?\n|\r/)) {
+      if (line.trim() && !parseProgress(line) && !NOISE.some((re) => re.test(line))) onLine(line);
+    }
   }
   onEnd();
   return () => {};

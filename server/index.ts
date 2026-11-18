@@ -1,6 +1,6 @@
 import http, { type IncomingMessage, type ServerResponse } from "node:http";
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { extname, resolve, sep } from "node:path";
 import { ROOT, RESULTS_DIR, getRun, listRuns, loadStore } from "./store.ts";
 import { activeRunId, followLogs, reapOrphans, startRun, stopAll, stopRun } from "./launcher.ts";
 import { LIMITS, MODES, PHASES, allowedTargets, assertConfig, validateParams } from "./validate.ts";
@@ -78,11 +78,20 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
   return JSON.parse(Buffer.concat(chunks).toString() || "{}");
 }
 
-const STATIC: Record<string, [string, string]> = {
-  "/": ["index.html", "text/html; charset=utf-8"],
-  "/app.js": ["app.js", "text/javascript; charset=utf-8"],
-  "/style.css": ["style.css", "text/css; charset=utf-8"],
+const WEB_DIR = resolve(ROOT, "web");
+const MIME: Record<string, string> = {
+  ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
+  ".woff2": "font/woff2", ".svg": "image/svg+xml", ".ico": "image/x-icon",
 };
+/** Resolves a request path to a file inside web/, or null. No dotfiles, no escapes. */
+function staticFile(path: string): { file: string; type: string } | null {
+  const rel = path === "/" ? "/index.html" : path;
+  if (rel.split("/").some((seg) => seg.startsWith("."))) return null;
+  const file = resolve(WEB_DIR, "." + rel);
+  if (!file.startsWith(WEB_DIR + sep)) return null;
+  const type = MIME[extname(file)];
+  return type && existsSync(file) ? { file, type } : null;
+}
 const PAGE_CSP = "default-src 'self'; frame-src 'self'; img-src 'self' data:; frame-ancestors 'none'";
 // The k6 report is self-contained but runs its own scripts, so it is sandboxed
 // away from this origin and cannot make network requests.
@@ -136,11 +145,11 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
     return void res.end(JSON.stringify({ ok: true }));
   }
 
-  const stat = STATIC[path];
-  if (stat && (method === "GET" || method === "HEAD")) {
-    const body = readFileSync(resolve(ROOT, "web", stat[0]));
-    res.writeHead(200, { ...SECURITY, "content-type": stat[1], "content-security-policy": PAGE_CSP });
-    return void res.end(body);
+  const stat = method === "GET" || method === "HEAD" ? staticFile(path) : null;
+  if (stat) {
+    const cache = stat.type === "font/woff2" ? "public, max-age=31536000, immutable" : "no-cache";
+    res.writeHead(200, { ...SECURITY, "content-type": stat.type, "cache-control": cache, "content-security-policy": PAGE_CSP });
+    return void res.end(method === "HEAD" ? undefined : readFileSync(stat.file));
   }
 
   if (path === "/api/config" && method === "GET") {
@@ -186,6 +195,7 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
         id,
         (l) => res.write(`data: ${JSON.stringify(l)}\n\n`),
         () => { res.write("event: end\ndata: {}\n\n"); res.end(); },
+        (p) => res.write(`event: progress\ndata: ${JSON.stringify(p)}\n\n`),
       );
       req.on("close", () => stop?.());
       return;
